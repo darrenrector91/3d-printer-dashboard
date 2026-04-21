@@ -1,4 +1,12 @@
+using PrinterDashboard.Api.Configuration;
+using PrinterDashboard.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<BambuOptions>(
+    builder.Configuration.GetSection(BambuOptions.SectionName));
+
+builder.Services.AddSingleton<PrinterConnectionService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -18,16 +26,9 @@ app.MapGet("/api/ping", () => Results.Ok(new
     message = "PrinterDashboard API is running"
 }));
 
-app.MapGet("/api/printer/config-status", (IConfiguration config) =>
+app.MapGet("/api/printer/config-status", (PrinterConnectionService service) =>
 {
-    var host = config["Bambu:Host"];
-    var accessCode = config["Bambu:AccessCode"];
-
-    return Results.Ok(new
-    {
-        hostConfigured = !string.IsNullOrWhiteSpace(host),
-        accessCodeConfigured = !string.IsNullOrWhiteSpace(accessCode)
-    });
+    return Results.Ok(service.GetConnectionStatus());
 });
 
 app.MapGet("/api/printer/target", (IConfiguration config) =>
