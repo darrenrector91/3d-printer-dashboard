@@ -1,0 +1,6 @@
+@PrinterDashboard.Api_HostAddress = http://localhost:5189
+
+GET {{PrinterDashboard.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

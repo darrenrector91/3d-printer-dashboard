@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "1eVOvken4tgLsyauYarujZVrvfkJFxgA8iPfm/i6qsw=",
+  "Source": "PrinterDashboard.Api",
+  "BasePath": "_content/PrinterDashboard.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
