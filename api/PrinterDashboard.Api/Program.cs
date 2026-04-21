@@ -1,13 +1,10 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -16,19 +13,39 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 app.MapGet("/api/ping", () => Results.Ok(new
 {
     message = "PrinterDashboard API is running"
 }));
 
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+app.MapGet("/api/printer/config-status", (IConfiguration config) =>
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+    var host = config["Bambu:Host"];
+    var accessCode = config["Bambu:AccessCode"];
+
+    return Results.Ok(new
+    {
+        hostConfigured = !string.IsNullOrWhiteSpace(host),
+        accessCodeConfigured = !string.IsNullOrWhiteSpace(accessCode)
+    });
+});
+
+app.MapGet("/api/printer/target", (IConfiguration config) =>
+{
+    var host = config["Bambu:Host"];
+
+    if (string.IsNullOrWhiteSpace(host))
+    {
+        return Results.BadRequest(new
+        {
+            message = "Printer host is not configured"
+        });
+    }
+
+    return Results.Ok(new
+    {
+        host
+    });
+});
+
+app.Run();
