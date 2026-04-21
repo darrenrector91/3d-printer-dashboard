@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/drector/projects/3d-printer-app/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj": {}
+    "/Users/darrenrector/3d-printer-dashboard/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj": {}
   },
   "projects": {
-    "/home/drector/projects/3d-printer-app/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj": {
+    "/Users/darrenrector/3d-printer-dashboard/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/drector/projects/3d-printer-app/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj",
+        "projectUniqueName": "/Users/darrenrector/3d-printer-dashboard/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj",
         "projectName": "PrinterDashboard.Api",
-        "projectPath": "/home/drector/projects/3d-printer-app/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj",
-        "packagesPath": "/home/drector/.nuget/packages/",
-        "outputPath": "/home/drector/projects/3d-printer-app/api/PrinterDashboard.Api/obj/",
+        "projectPath": "/Users/darrenrector/3d-printer-dashboard/api/PrinterDashboard.Api/PrinterDashboard.Api.csproj",
+        "packagesPath": "/Users/darrenrector/.nuget/packages/",
+        "outputPath": "/Users/darrenrector/3d-printer-dashboard/api/PrinterDashboard.Api/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/drector/.nuget/NuGet/NuGet.Config"
+          "/Users/darrenrector/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -37,7 +37,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -63,6 +64,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.osx-x64",
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -71,7 +86,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/home/drector/.dotnet/sdk/8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

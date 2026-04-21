@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PrinterDashboard.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+30f78e49b262b838552b10624f16c8aa04d5e866")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+981575bb28fa2a02f5137815fd4897adc4567d1f")]
 [assembly: System.Reflection.AssemblyProductAttribute("PrinterDashboard.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PrinterDashboard.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
