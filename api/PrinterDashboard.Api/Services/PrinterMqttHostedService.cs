@@ -1,5 +1,7 @@
+using System.Security.Authentication;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using MQTTnet;
 using PrinterDashboard.Api.Configuration;
 using PrinterDashboard.Api.Services.Interfaces;
 
@@ -9,8 +11,9 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
 {
     private readonly BambuPrinterOptions _options;
     private readonly ILogger<PrinterMqttHostedService> _logger;
+    private IMqttClient? _client;
 
-    public bool IsConnected { get; private set; }
+    public bool IsConnected => _client?.IsConnected == true;
 
     public PrinterMqttHostedService(
         IOptions<BambuPrinterOptions> options,
@@ -26,20 +29,93 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
         return base.StartAsync(cancellationToken);
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Printer MQTT hosted service stopping.");
-        IsConnected = false;
-        return base.StopAsync(cancellationToken);
+
+        if (_client?.IsConnected == true)
+        {
+            await _client.DisconnectAsync(cancellationToken: cancellationToken);
+        }
+
+        await base.StopAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Printer MQTT hosted service is running for host {Host}.", _options.Host);
-
-        while (!stoppingToken.IsCancellationRequested)
+        if (string.IsNullOrWhiteSpace(_options.Host))
         {
-            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            _logger.LogWarning("Printer MQTT host is not configured.");
+            return;
         }
+
+        if (string.IsNullOrWhiteSpace(_options.Username))
+        {
+            _logger.LogWarning("Printer MQTT username is not configured.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.AccessCode))
+        {
+            _logger.LogWarning("Printer MQTT access code is not configured.");
+            return;
+        }
+
+        try
+        {
+            var factory = new MqttClientFactory();
+            _client = factory.CreateMqttClient();
+
+            var mqttOptions = new MqttClientOptionsBuilder()
+                .WithTcpServer(_options.Host, _options.Port)
+                .WithCredentials(_options.Username, _options.AccessCode)
+                .WithTimeout(TimeSpan.FromSeconds(10))
+                .WithTlsOptions(tls =>
+                {
+                    tls.UseTls();
+                    tls.WithSslProtocols(SslProtocols.Tls12);
+                    tls.WithCertificateValidationHandler(_ => true);
+                })
+                .Build();
+
+            var response = await _client.ConnectAsync(mqttOptions, stoppingToken);
+
+            if (response.ResultCode == MqttClientConnectResultCode.Success)
+            {
+                _logger.LogInformation("Connected to printer MQTT broker at {Host}:{Port}.", _options.Host, _options.Port);
+            }
+            else
+            {
+                _logger.LogWarning("Printer MQTT connection failed with result code {ResultCode}.", response.ResultCode);
+                return;
+            }
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Printer MQTT hosted service cancellation requested.");
+        }
+        catch (AuthenticationException ex)
+        {
+            _logger.LogWarning(ex, "TLS authentication failed while connecting to printer MQTT.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while starting printer MQTT connection.");
+        }
+    }
+
+    Task IPrinterMqttClientService.StartAsync(CancellationToken cancellationToken)
+    {
+        return StartAsync(cancellationToken);
+    }
+
+    Task IPrinterMqttClientService.StopAsync(CancellationToken cancellationToken)
+    {
+        return StopAsync(cancellationToken);
     }
 }
