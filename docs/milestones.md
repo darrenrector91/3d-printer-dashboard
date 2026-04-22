@@ -28,6 +28,7 @@
 **Goal:** Establish connection to Bambu printer over MQTT
 
 ### Tasks
+
 - Install MQTTnet
 - Create BambuMqttService
 - Implement TryConnectAsync()
@@ -37,8 +38,55 @@
   - TLS
   - credentials (bblp + access code)
 
+### Completed
+
+- Configuration standardized to `BambuPrinter` section
+- Printer LAN details confirmed:
+  - IP: `192.168.4.29`
+  - Access code retrieved
+- User-secrets configured and verified:
+  - `BambuPrinter:Host`
+  - `BambuPrinter:AccessCode`
+- Configuration binding implemented via `BambuPrinterOptions`
+- Options registered in dependency injection
+- Verified configuration binding at runtime
+- Removed legacy/misaligned config (`Bambu:*`)
+- MQTTnet package installed
+- Service contract created:
+  - `IBambuMqttService`
+  - `MqttConnectionTestResult`
+- Service implementation scaffolded:
+  - `BambuMqttService`
+- Service registered in DI container
+- MQTT connection probe implemented:
+  - validates required configuration
+  - creates MQTT client
+  - applies TLS configuration
+  - uses printer credentials
+  - attempts connect/disconnect
+  - returns sanitized error messages
+- Controller endpoint added:
+  - `/api/printer/test-mqtt`
+- Controller support enabled in `Program.cs`
+- Existing printer target endpoint updated to use `BambuPrinter:Host`
+
+### Status
+
+🟡 **In Progress** — endpoint added, live connection verification in progress
+
+### Next up
+
+- Run live MQTT connection test against printer
+- Confirm success response or meaningful failure response
+- Merge Milestone 1 branch
+- Begin Milestone 2 — Subscribe to Printer Data
+
 ### Success Criteria
-Endpoint returns success or meaningful error
+
+- Endpoint returns:
+  - `success = true` on successful connection  
+  OR  
+  - a meaningful error message on failure
 
 ---
 
