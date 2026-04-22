@@ -10,9 +10,15 @@ builder.Services.Configure<BambuPrinterOptions>(
 builder.Services.AddSingleton<PrinterConnectionService>();
 builder.Services.AddScoped<IBambuMqttService, BambuMqttService>();
 
+builder.Services.AddSingleton<PrinterMqttHostedService>();
+builder.Services.AddSingleton<IPrinterMqttClientService>(sp => sp.GetRequiredService<PrinterMqttHostedService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<PrinterMqttHostedService>());
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
 
 var app = builder.Build();
 
