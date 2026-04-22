@@ -28,6 +28,7 @@
 **Goal:** Establish connection to Bambu printer over MQTT
 
 ### Tasks
+
 - Install MQTTnet
 - Create BambuMqttService
 - Implement TryConnectAsync()
@@ -37,9 +38,41 @@
   - TLS
   - credentials (bblp + access code)
 
-### Success Criteria
-Endpoint returns success or meaningful error
+### Completed
 
+- Configuration standardized to `BambuPrinter` section
+- Printer LAN details confirmed:
+  - IP: `192.168.4.29`
+  - Access code retrieved
+- User-secrets configured and verified:
+  - `BambuPrinter:Host`
+  - `BambuPrinter:AccessCode`
+- Configuration binding implemented via `BambuPrinterOptions`
+- Options registered in dependency injection
+- Verified configuration binding at runtime
+- Removed legacy/misaligned config (`Bambu:*`)
+- Repository workflow established:
+  - feature branch created (`feature/milestone.1-mqtt-connection`)
+  - changes committed and merged via PR
+
+### Status
+
+🟡 **In Progress** — configuration complete, MQTT not yet implemented
+
+### Next up
+
+- Install MQTTnet
+- Create `BambuMqttService`
+- Implement `TryConnectAsync()`
+- Add `/api/printer/test-mqtt` endpoint
+
+### Success Criteria
+
+- Endpoint returns:
+  - `success = true` on successful connection  
+  OR  
+  - a meaningful error message on failure
+p
 ---
 
 ## Milestone 2 — Subscribe to Printer Data
