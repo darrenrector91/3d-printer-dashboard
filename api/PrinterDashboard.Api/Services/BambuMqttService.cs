@@ -39,12 +39,21 @@ public sealed class BambuMqttService : IBambuMqttService
             };
         }
 
+        if (string.IsNullOrWhiteSpace(_options.Username))
+        {
+            return new MqttConnectionTestResult
+            {
+                Success = false,
+                Message = "Printer username is not configured."
+            };
+        }
+
         try
         {
             var factory = new MqttClientFactory();
             using var client = factory.CreateMqttClient();
 
-            var options = new MqttClientOptionsBuilder()
+            var mqttOptions = new MqttClientOptionsBuilder()
                 .WithTcpServer(_options.Host, _options.Port)
                 .WithCredentials(_options.Username, _options.AccessCode)
                 .WithTimeout(TimeSpan.FromSeconds(10))
@@ -56,7 +65,7 @@ public sealed class BambuMqttService : IBambuMqttService
                 })
                 .Build();
 
-            var response = await client.ConnectAsync(options, cancellationToken);
+            var response = await client.ConnectAsync(mqttOptions, cancellationToken);
 
             if (response.ResultCode == MqttClientConnectResultCode.Success)
             {
