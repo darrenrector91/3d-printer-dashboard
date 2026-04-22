@@ -5,9 +5,9 @@ namespace PrinterDashboard.Api.Services;
 
 public class PrinterConnectionService
 {
-    private readonly BambuOptions _options;
+    private readonly BambuPrinterOptions _options;
 
-    public PrinterConnectionService(IOptions<BambuOptions> options)
+    public PrinterConnectionService(IOptions<BambuPrinterOptions> options)
     {
         _options = options.Value;
     }

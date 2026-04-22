@@ -51,20 +51,29 @@
 - Options registered in dependency injection
 - Verified configuration binding at runtime
 - Removed legacy/misaligned config (`Bambu:*`)
+- MQTTnet package installed
+- Service contract created:
+  - `IBambuMqttService`
+  - `MqttConnectionTestResult`
+- Service implementation scaffolded:
+  - `BambuMqttService` (skeleton)
+- Service registered in DI container
 - Repository workflow established:
   - feature branch created (`feature/milestone.1-mqtt-connection`)
   - changes committed and merged via PR
 
 ### Status
 
-🟡 **In Progress** — configuration complete, MQTT not yet implemented
+🟡 **In Progress** — service layer in place, MQTT connection logic not yet implemented
 
 ### Next up
 
-- Install MQTTnet
-- Create `BambuMqttService`
-- Implement `TryConnectAsync()`
+- Implement `TryConnectAsync()` connection logic
+- Configure MQTT client:
+  - TLS
+  - credentials
 - Add `/api/printer/test-mqtt` endpoint
+- Validate connection to printer over LAN
 
 ### Success Criteria
 
@@ -72,7 +81,7 @@
   - `success = true` on successful connection  
   OR  
   - a meaningful error message on failure
-p
+
 ---
 
 ## Milestone 2 — Subscribe to Printer Data

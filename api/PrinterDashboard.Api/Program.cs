@@ -3,8 +3,8 @@ using PrinterDashboard.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<BambuOptions>(
-    builder.Configuration.GetSection(BambuOptions.SectionName));
+builder.Services.Configure<BambuPrinterOptions>(
+    builder.Configuration.GetSection(BambuPrinterOptions.SectionName));
 
 builder.Services.AddSingleton<PrinterConnectionService>();
 

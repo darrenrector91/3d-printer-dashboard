@@ -1,6 +1,6 @@
 namespace PrinterDashboard.Api.Configuration;
 
-public class BambuOptions
+public class BambuPrinterOptions
 {
     public const string SectionName = "BambuPrinter";
 

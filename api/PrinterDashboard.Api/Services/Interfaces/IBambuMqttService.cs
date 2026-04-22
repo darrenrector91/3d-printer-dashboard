@@ -1,4 +1,6 @@
-namespace PrinterDashboard.Api.Services;
+using PrinterDashboard.Api.Services;
+
+namespace PrinterDashboard.Api.Services.Interfaces;
 
 public interface IBambuMqttService
 {
