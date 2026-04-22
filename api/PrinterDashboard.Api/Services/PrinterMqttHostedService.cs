@@ -12,6 +12,8 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
     private readonly BambuPrinterOptions _options;
     private readonly ILogger<PrinterMqttHostedService> _logger;
     private IMqttClient? _client;
+    private MqttClientOptions? _mqttOptions;
+    private CancellationToken _stoppingToken;
 
     public bool IsConnected => _client?.IsConnected == true;
 
@@ -43,6 +45,8 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _stoppingToken = stoppingToken;
+
         if (string.IsNullOrWhiteSpace(_options.Host))
         {
             _logger.LogWarning("Printer MQTT host is not configured.");
@@ -66,7 +70,44 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
             var factory = new MqttClientFactory();
             _client = factory.CreateMqttClient();
 
-            var mqttOptions = new MqttClientOptionsBuilder()
+            _client.DisconnectedAsync += async args =>
+            {
+                if (_stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                _logger.LogWarning("Printer MQTT disconnected. Reconnect will be attempted.");
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), _stoppingToken);
+
+                    if (_client?.IsConnected == false && _mqttOptions is not null)
+                    {
+                        var reconnectResponse = await _client.ConnectAsync(_mqttOptions, _stoppingToken);
+
+                        if (reconnectResponse.ResultCode == MqttClientConnectResultCode.Success)
+                        {
+                            _logger.LogInformation("Reconnected to printer MQTT broker at {Host}:{Port}.", _options.Host, _options.Port);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Printer MQTT reconnect failed with result code {ResultCode}.", reconnectResponse.ResultCode);
+                        }
+                    }
+                }
+                catch (OperationCanceledException) when (_stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Reconnect cancelled because hosted service is stopping.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unexpected error while reconnecting to printer MQTT.");
+                }
+            };
+
+            _mqttOptions = new MqttClientOptionsBuilder()
                 .WithTcpServer(_options.Host, _options.Port)
                 .WithCredentials(_options.Username, _options.AccessCode)
                 .WithTimeout(TimeSpan.FromSeconds(10))
@@ -78,7 +119,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
                 })
                 .Build();
 
-            var response = await _client.ConnectAsync(mqttOptions, stoppingToken);
+            var response = await _client.ConnectAsync(_mqttOptions, stoppingToken);
 
             if (response.ResultCode == MqttClientConnectResultCode.Success)
             {
