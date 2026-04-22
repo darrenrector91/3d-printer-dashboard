@@ -65,17 +65,21 @@
   - uses printer credentials
   - attempts connect/disconnect
   - returns sanitized error messages
+- Controller endpoint added:
+  - `/api/printer/test-mqtt`
+- Controller support enabled in `Program.cs`
+- Existing printer target endpoint updated to use `BambuPrinter:Host`
 
 ### Status
 
-🟡 **In Progress** — MQTT connection logic implemented, endpoint not yet added
+🟡 **In Progress** — endpoint added, live connection verification in progress
 
 ### Next up
 
-- Add `/api/printer/test-mqtt` endpoint
-- Call `BambuMqttService.TryConnectAsync()`
-- Verify live connection result from Swagger
-- Confirm success or meaningful failure response
+- Run live MQTT connection test against printer
+- Confirm success response or meaningful failure response
+- Merge Milestone 1 branch
+- Begin Milestone 2 — Subscribe to Printer Data
 
 ### Success Criteria
 
@@ -83,7 +87,7 @@
   - `success = true` on successful connection  
   OR  
   - a meaningful error message on failure
-  
+
 ---
 
 ## Milestone 2 — Subscribe to Printer Data
