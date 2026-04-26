@@ -19,6 +19,9 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
     private DateTime _lastLogTime = DateTime.MinValue;
 
     public bool IsConnected => _client?.IsConnected == true;
+    public DateTime? LastMessageAtUtc { get; private set; }
+    public string? LastMessageTopic { get; private set; }
+    public string? LastError { get; private set; }
 
     public PrinterMqttHostedService(
         IOptions<BambuPrinterOptions> options,
@@ -74,51 +77,51 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
             _client = factory.CreateMqttClient();
 
             _client.ApplicationMessageReceivedAsync += async args =>
-            {
-                var topic = args.ApplicationMessage.Topic;
+             {
+                 var topic = args.ApplicationMessage.Topic;
 
-                // Only care about report messages
-                if (string.IsNullOrWhiteSpace(topic) || !topic.Contains("/report"))
-                {
-                    return;
-                }
+                 // track status FIRST
+                 LastMessageAtUtc = DateTime.UtcNow;
+                 LastMessageTopic = topic;
 
-                var now = DateTime.UtcNow;
+                 if (string.IsNullOrWhiteSpace(topic) || !topic.Contains("/report"))
+                 {
+                     return;
+                 }
 
-                // Throttle logging to once every 60 seconds
-                if ((now - _lastLogTime).TotalSeconds < 60)
-                {
-                    return;
-                }
+                 var now = DateTime.UtcNow;
 
-                _lastLogTime = now;
+                 if ((now - _lastLogTime).TotalSeconds < 60)
+                 {
+                     return;
+                 }
 
-                var payloadSequence = args.ApplicationMessage.Payload;
+                 _lastLogTime = now;
 
-                var payload = payloadSequence.Length > 0
+                 var payloadSequence = args.ApplicationMessage.Payload;
+
+                 var payload = payloadSequence.Length > 0
                     ? Encoding.UTF8.GetString(payloadSequence.ToArray())
                     : string.Empty;
 
-                _logger.LogInformation(
+                 _logger.LogInformation(
                     "MQTT report received. Topic: {Topic}. Size: {Size} bytes.",
                     topic,
                     payload.Length);
 
-                // Only save meaningful payloads (avoid tiny/noise messages)
-                if (!string.IsNullOrWhiteSpace(payload) && payload.Contains("\"print\""))
-                {
-                    var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "mqtt-samples");
-                    Directory.CreateDirectory(sampleDirectory);
+                 if (!string.IsNullOrWhiteSpace(payload) && payload.Contains("\"print\""))
+                 {
+                     var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "mqtt-samples");
+                     Directory.CreateDirectory(sampleDirectory);
 
-                    var fileName = $"mqtt-{now:yyyyMMdd-HHmmss-fff}.json";
-                    var filePath = Path.Combine(sampleDirectory, fileName);
+                     var fileName = $"mqtt-{now:yyyyMMdd-HHmmss-fff}.json";
+                     var filePath = Path.Combine(sampleDirectory, fileName);
 
-                    await File.WriteAllTextAsync(filePath, payload, _stoppingToken);
+                     await File.WriteAllTextAsync(filePath, payload, _stoppingToken);
 
-                    _logger.LogInformation("Saved MQTT sample to {FilePath}", filePath);
-                }
-            };
-
+                     _logger.LogInformation("Saved MQTT sample to {FilePath}", filePath);
+                 }
+             };
             _client.DisconnectedAsync += async args =>
             {
                 if (_stoppingToken.IsCancellationRequested)

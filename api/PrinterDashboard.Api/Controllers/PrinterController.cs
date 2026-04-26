@@ -20,4 +20,17 @@ public sealed class PrinterController : ControllerBase
             message = result.Message
         });
     }
+
+    [HttpGet("mqtt-status")]
+    public IActionResult GetMqttStatus(
+        [FromServices] IPrinterMqttClientService mqttClientService)
+    {
+        return Ok(new
+        {
+            connected = mqttClientService.IsConnected,
+            lastMessageAtUtc = mqttClientService.LastMessageAtUtc,
+            lastMessageTopic = mqttClientService.LastMessageTopic,
+            lastError = mqttClientService.LastError
+        });
+    }
 }
