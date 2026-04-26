@@ -145,8 +145,9 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
                              bedTemp);
                      }
                  }
-                 catch
+                 catch (Exception ex)
                  {
+                     _logger.LogWarning(ex, "Failed to parse MQTT payload.");
                  }
 
                  _logger.LogInformation(
