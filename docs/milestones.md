@@ -42,7 +42,7 @@
 
 - Configuration standardized to `BambuPrinter` section
 - Printer LAN details confirmed:
-  - IP: `192.168.4.29`
+  - IP: `192.168.4.36`
   - Access code retrieved
 - User-secrets configured and verified:
   - `BambuPrinter:Host`
@@ -55,7 +55,7 @@
 - Service contract created:
   - `IBambuMqttService`
   - `MqttConnectionTestResult`
-- Service implementation scaffolded:
+- Service implementation completed:
   - `BambuMqttService`
 - Service registered in DI container
 - MQTT connection probe implemented:
@@ -69,17 +69,16 @@
   - `/api/printer/test-mqtt`
 - Controller support enabled in `Program.cs`
 - Existing printer target endpoint updated to use `BambuPrinter:Host`
+- Endpoint tested and verified:
+  - returns success or meaningful failure response
 
 ### Status
 
-🟡 **In Progress** — endpoint added, live connection verification in progress
+🟢 **Complete** — MQTT connectivity verified via API endpoint
 
-### Next up
+### Next
 
-- Run live MQTT connection test against printer
-- Confirm success response or meaningful failure response
-- Merge Milestone 1 branch
-- Begin Milestone 2 — Subscribe to Printer Data
+- Milestone 2 — Subscribe to Printer Data
 
 ### Success Criteria
 
@@ -94,18 +93,176 @@
 
 **Goal:** Receive real data from printer
 
-### Tasks
-- Subscribe to MQTT topics
-- Identify topics for:
-  - status
-  - telemetry
-- Log incoming messages
-- Deserialize JSON payloads
+### Branch
 
-### Success Criteria
-- Real printer data visible
+feature/milestone.2-subscribe-printer-data
+
+### Commit flow
+
+1. `milestone.2 add persistent MQTT client service contract`
+2. `milestone.2 add printer MQTT hosted service skeleton`
+3. `milestone.2 register printer MQTT hosted service`
+4. `milestone.2 implement persistent MQTT connection startup`
+5. `milestone.2 add MQTT reconnect handling`
+6. `milestone.2 add printer topic subscriptions`
+7. `milestone.2 add raw MQTT message logging`
+8. `milestone.2 add endpoint for MQTT connection status`
+9. `milestone.2 capture sample printer payloads`
+10. `milestone.2 document printer topic findings`
+
+### What each commit should contain
+
+#### 1. `milestone.2 add persistent MQTT client service contract`
+
+Add the long-lived service interface.
+
+Suggested file:
+- `Services/Interfaces/IPrinterMqttClientService.cs`
+
+Suggested shape:
+- `StartAsync()`
+- `StopAsync()`
+- `IsConnected`
+
+This separates the persistent connection work from the Milestone 1 probe service.
 
 ---
+
+#### 2. `milestone.2 add printer MQTT hosted service skeleton`
+
+Add a background service class, but no real MQTT logic yet.
+
+Suggested file:
+- `Services/PrinterMqttHostedService.cs`
+
+Include:
+- constructor injection
+- logger
+- config/options
+- empty `ExecuteAsync()`
+
+Keep it buildable and boring.
+
+---
+
+#### 3. `milestone.2 register printer MQTT hosted service`
+
+Wire the hosted service into DI.
+
+In `Program.cs`:
+- register the service
+- register it as a hosted/background service
+
+Still no connection logic yet.
+
+---
+
+#### 4. `milestone.2 implement persistent MQTT connection startup`
+
+Now add the real startup connection logic.
+
+Include:
+- create MQTT client
+- apply TLS
+- apply credentials
+- connect on app start
+- log success/failure
+
+This is where the service becomes real.
+
+---
+
+#### 5. `milestone.2 add MQTT reconnect handling`
+
+Handle disconnects and reconnect attempts.
+
+Include:
+- disconnected event handler
+- delayed retry
+- reconnect logging
+
+Keep reconnect simple at first. No fancy backoff yet unless needed.
+
+---
+
+#### 6. `milestone.2 add printer topic subscriptions`
+
+Subscribe once connected.
+
+This commit should only focus on:
+- known topic subscription list
+- subscribe after successful connect/reconnect
+
+Do not parse payloads yet.
+
+---
+
+#### 7. `milestone.2 add raw MQTT message logging`
+
+Handle received messages and log raw payloads.
+
+Include:
+- message received handler
+- topic name logging
+- raw payload logging
+
+This gives you truth from the printer before you invent models too early.
+
+---
+
+#### 8. `milestone.2 add endpoint for MQTT connection status`
+
+Add a small endpoint to answer:
+- connected?
+- last connect attempt?
+- last error?
+
+Example:
+- `/api/printer/mqtt-status`
+
+Keep it operational, not fancy.
+
+---
+
+#### 9. `milestone.2 capture sample printer payloads`
+
+Once messages are flowing, save representative payload samples somewhere in the repo.
+
+Good options:
+- `docs/mqtt-samples/`
+- `docs/printer-payloads.md`
+
+This makes Milestone 3 much easier.
+
+---
+
+#### 10. `milestone.2 document printer topic findings`
+
+Write down:
+- topics seen
+- what looks like status
+- what looks like telemetry
+- any command-related topics discovered
+
+This closes out the milestone cleanly.
+
+### Recommended rule for Milestone 2
+
+Do not jump into deserialization early.
+
+First prove:
+- persistent connection works
+- reconnect works
+- subscriptions work
+- messages are arriving
+
+Then move to modeling.
+
+### Immediate next commit
+
+Start with:
+
+`milestone.2 add persistent MQTT client service contract`
 
 ## Milestone 3 — State Management Layer
 
