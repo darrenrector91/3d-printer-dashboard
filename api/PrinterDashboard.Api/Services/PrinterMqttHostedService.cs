@@ -113,7 +113,17 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
 
                      if (doc.RootElement.TryGetProperty("print", out var print))
                      {
-                         var state = print.TryGetProperty("gcode_state", out var s) ? s.GetString() : null;
+                         var rawState = print.TryGetProperty("gcode_state", out var s)
+                             ? s.GetString()
+                             : null;
+
+                         var state = rawState switch
+                         {
+                             "RUNNING" => PrinterState.Printing,
+                             "PAUSE" => PrinterState.Paused,
+                             "IDLE" => PrinterState.Idle,
+                             _ => PrinterState.Unknown
+                         };
                          var progress = print.TryGetProperty("mc_percent", out var p) ? p.GetInt32() : 0;
                          var nozzleTemp = print.TryGetProperty("nozzle_temper", out var n) ? n.GetDouble() : 0;
                          var bedTemp = print.TryGetProperty("bed_temper", out var b) ? b.GetDouble() : 0;
