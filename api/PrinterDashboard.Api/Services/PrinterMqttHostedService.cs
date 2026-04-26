@@ -1,9 +1,11 @@
+using System.Text;
 using System.Security.Authentication;
-using Microsoft.Extensions.Hosting;
+using System.Buffers;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using PrinterDashboard.Api.Configuration;
 using PrinterDashboard.Api.Services.Interfaces;
+
 
 namespace PrinterDashboard.Api.Services;
 
@@ -14,6 +16,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
     private IMqttClient? _client;
     private MqttClientOptions? _mqttOptions;
     private CancellationToken _stoppingToken;
+    private DateTime _lastLogTime = DateTime.MinValue;
 
     public bool IsConnected => _client?.IsConnected == true;
 
@@ -70,6 +73,52 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
             var factory = new MqttClientFactory();
             _client = factory.CreateMqttClient();
 
+            _client.ApplicationMessageReceivedAsync += async args =>
+            {
+                var topic = args.ApplicationMessage.Topic;
+
+                // Only care about report messages
+                if (string.IsNullOrWhiteSpace(topic) || !topic.Contains("/report"))
+                {
+                    return;
+                }
+
+                var now = DateTime.UtcNow;
+
+                // Throttle logging to once every 60 seconds
+                if ((now - _lastLogTime).TotalSeconds < 60)
+                {
+                    return;
+                }
+
+                _lastLogTime = now;
+
+                var payloadSequence = args.ApplicationMessage.Payload;
+
+                var payload = payloadSequence.Length > 0
+                    ? Encoding.UTF8.GetString(payloadSequence.ToArray())
+                    : string.Empty;
+
+                _logger.LogInformation(
+                    "MQTT report received. Topic: {Topic}. Size: {Size} bytes.",
+                    topic,
+                    payload.Length);
+
+                // Only save meaningful payloads (avoid tiny/noise messages)
+                if (!string.IsNullOrWhiteSpace(payload) && payload.Contains("\"print\""))
+                {
+                    var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "mqtt-samples");
+                    Directory.CreateDirectory(sampleDirectory);
+
+                    var fileName = $"mqtt-{now:yyyyMMdd-HHmmss-fff}.json";
+                    var filePath = Path.Combine(sampleDirectory, fileName);
+
+                    await File.WriteAllTextAsync(filePath, payload, _stoppingToken);
+
+                    _logger.LogInformation("Saved MQTT sample to {FilePath}", filePath);
+                }
+            };
+
             _client.DisconnectedAsync += async args =>
             {
                 if (_stoppingToken.IsCancellationRequested)
@@ -90,6 +139,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
                         if (reconnectResponse.ResultCode == MqttClientConnectResultCode.Success)
                         {
                             _logger.LogInformation("Reconnected to printer MQTT broker at {Host}:{Port}.", _options.Host, _options.Port);
+                            await SubscribeToTopicsAsync(_stoppingToken);
                         }
                         else
                         {
@@ -124,6 +174,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
             if (response.ResultCode == MqttClientConnectResultCode.Success)
             {
                 _logger.LogInformation("Connected to printer MQTT broker at {Host}:{Port}.", _options.Host, _options.Port);
+                await SubscribeToTopicsAsync(stoppingToken);
             }
             else
             {
@@ -147,6 +198,27 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while starting printer MQTT connection.");
+        }
+    }
+
+    private async Task SubscribeToTopicsAsync(CancellationToken cancellationToken)
+    {
+        if (_client is null)
+        {
+            return;
+        }
+
+        var topics = new[]
+        {
+            "device/+/report",
+            "device/+/request",
+            "device/+/heartbeat"
+        };
+
+        foreach (var topic in topics)
+        {
+            await _client.SubscribeAsync(topic, MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce, cancellationToken);
+            _logger.LogInformation("Subscribed to MQTT topic {Topic}.", topic);
         }
     }
 

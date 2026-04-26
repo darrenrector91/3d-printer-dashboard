@@ -42,7 +42,7 @@
 
 - Configuration standardized to `BambuPrinter` section
 - Printer LAN details confirmed:
-  - IP: `192.168.4.29`
+  - IP: `192.168.4.36`
   - Access code retrieved
 - User-secrets configured and verified:
   - `BambuPrinter:Host`
