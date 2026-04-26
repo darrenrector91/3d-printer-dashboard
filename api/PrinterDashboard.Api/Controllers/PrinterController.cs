@@ -33,4 +33,11 @@ public sealed class PrinterController : ControllerBase
             lastError = mqttClientService.LastError
         });
     }
+
+    [HttpGet("status")]
+    public IActionResult GetPrinterStatus(
+        [FromServices] IPrinterMqttClientService mqttClientService)
+    {
+        return Ok(mqttClientService.CurrentStatus);
+    }
 }

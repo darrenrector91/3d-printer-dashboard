@@ -6,6 +6,7 @@ using MQTTnet;
 using PrinterDashboard.Api.Configuration;
 using PrinterDashboard.Api.Services.Interfaces;
 using System.Text.Json;
+using PrinterDashboard.Api.Models;
 
 namespace PrinterDashboard.Api.Services;
 
@@ -13,6 +14,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
 {
     private readonly BambuPrinterOptions _options;
     private readonly ILogger<PrinterMqttHostedService> _logger;
+    private readonly object _lock = new();
     private IMqttClient? _client;
     private MqttClientOptions? _mqttOptions;
     private CancellationToken _stoppingToken;
@@ -22,6 +24,7 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
     public DateTime? LastMessageAtUtc { get; private set; }
     public string? LastMessageTopic { get; private set; }
     public string? LastError { get; private set; }
+    public PrinterStatus CurrentStatus { get; private set; } = new();
 
     public PrinterMqttHostedService(
         IOptions<BambuPrinterOptions> options,
@@ -110,13 +113,22 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
 
                      if (doc.RootElement.TryGetProperty("print", out var print))
                      {
-                         var state = print.GetProperty("gcode_state").GetString();
-                         var progress = print.GetProperty("mc_percent").GetInt32();
-                         var nozzleTemp = print.GetProperty("nozzle_temper").GetDouble();
-                         var bedTemp = print.GetProperty("bed_temper").GetDouble();
+                         var state = print.TryGetProperty("gcode_state", out var s) ? s.GetString() : null;
+                         var progress = print.TryGetProperty("mc_percent", out var p) ? p.GetInt32() : 0;
+                         var nozzleTemp = print.TryGetProperty("nozzle_temper", out var n) ? n.GetDouble() : 0;
+                         var bedTemp = print.TryGetProperty("bed_temper", out var b) ? b.GetDouble() : 0;
+
+                         lock (_lock)
+                         {
+                             CurrentStatus.State = state;
+                             CurrentStatus.ProgressPercent = progress;
+                             CurrentStatus.NozzleTemperature = nozzleTemp;
+                             CurrentStatus.BedTemperature = bedTemp;
+                             CurrentStatus.LastUpdatedUtc = DateTime.UtcNow;
+                         }
 
                          _logger.LogInformation(
-                             "Printer State: {State} | Progress: {Progress}% | Nozzle: {Nozzle}°C | Bed: {Bed}°C",
+                             "Printer: {State} | {Progress}% | Nozzle {Nozzle}°C | Bed {Bed}°C",
                              state,
                              progress,
                              nozzleTemp,
@@ -125,7 +137,6 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
                  }
                  catch
                  {
-                     // ignore parsing issues for now
                  }
 
                  _logger.LogInformation(
