@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using PrinterDashboard.Api.Configuration;
 using PrinterDashboard.Api.Services.Interfaces;
-
+using System.Text.Json;
 
 namespace PrinterDashboard.Api.Services;
 
@@ -103,6 +103,30 @@ public sealed class PrinterMqttHostedService : BackgroundService, IPrinterMqttCl
                  var payload = payloadSequence.Length > 0
                     ? Encoding.UTF8.GetString(payloadSequence.ToArray())
                     : string.Empty;
+
+                 try
+                 {
+                     using var doc = JsonDocument.Parse(payload);
+
+                     if (doc.RootElement.TryGetProperty("print", out var print))
+                     {
+                         var state = print.GetProperty("gcode_state").GetString();
+                         var progress = print.GetProperty("mc_percent").GetInt32();
+                         var nozzleTemp = print.GetProperty("nozzle_temper").GetDouble();
+                         var bedTemp = print.GetProperty("bed_temper").GetDouble();
+
+                         _logger.LogInformation(
+                             "Printer State: {State} | Progress: {Progress}% | Nozzle: {Nozzle}°C | Bed: {Bed}°C",
+                             state,
+                             progress,
+                             nozzleTemp,
+                             bedTemp);
+                     }
+                 }
+                 catch
+                 {
+                     // ignore parsing issues for now
+                 }
 
                  _logger.LogInformation(
                     "MQTT report received. Topic: {Topic}. Size: {Size} bytes.",
